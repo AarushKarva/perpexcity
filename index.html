@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7fc">
+  <title>Perplexity Explorer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #e9ebf5;
+      --muted: #9aa4bb;
+      --line: #2b3245;
+      --blue: #5e78ff;
+      --purple: #9b73e8;
+      --gold: #ddc17a;
+      --pale-blue: #1a2032;
+      --green: #65c99b;
+      --red: #ff8296;
+      --shadow: 0 18px 48px rgba(0, 0, 0, 0.24);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at 93% 3%, rgba(107, 81, 173, 0.18), transparent 30rem),
+        radial-gradient(circle, rgba(158, 169, 205, 0.12) 1px, transparent 1px) 0 0 / 28px 28px,
+        #090c14;
+      color: var(--ink);
+      font: 15px/1.6 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+
+    .page { width: min(1080px, calc(100% - 36px)); margin: 0 auto; padding: 48px 0 72px; }
+
+    .masthead {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .masthead-brand { display: flex; align-items: center; gap: 12px; }
+    .sigil {
+      display: grid;
+      width: 35px;
+      height: 35px;
+      place-items: center;
+      border: 1px solid rgba(221, 193, 122, 0.36);
+      border-radius: 50%;
+      background: linear-gradient(145deg, #24243a, #131722);
+      color: var(--gold);
+      font-size: 17px;
+      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.28);
+    }
+
+    .archive-state { display: inline-flex; align-items: center; gap: 8px; color: #a7b0c5; font-size: 10px; letter-spacing: 0.12em; }
+    .archive-state::before { width: 7px; height: 7px; border-radius: 50%; background: #54a888; box-shadow: 0 0 0 3px rgba(84, 168, 136, 0.12); content: ""; }
+
+    .hero {
+      position: relative;
+      isolation: isolate;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 235px;
+      align-items: center;
+      gap: 30px;
+      min-height: 270px;
+      overflow: hidden;
+      margin-bottom: 28px;
+      padding: clamp(26px, 5vw, 48px);
+      border: 1px solid rgba(255, 255, 255, 0.11);
+      border-radius: 23px;
+      background: linear-gradient(118deg, #11182a 0%, #181d36 58%, #29224b 100%);
+      box-shadow: 0 22px 50px rgba(0, 0, 0, 0.34);
+    }
+    .hero::before {
+      position: absolute;
+      z-index: -1;
+      inset: 0;
+      background:
+        radial-gradient(circle at 79% 28%, rgba(145, 117, 230, 0.22), transparent 14rem),
+        radial-gradient(circle at 8% 10%, rgba(255, 255, 255, 0.36) 0 1px, transparent 1.5px) 0 0 / 35px 35px;
+      content: "";
+      pointer-events: none;
+    }
+    .hero::after {
+      position: absolute;
+      z-index: -1;
+      top: -150px;
+      right: 93px;
+      width: 420px;
+      height: 420px;
+      border: 1px solid rgba(226, 205, 151, 0.14);
+      border-radius: 50%;
+      box-shadow: 0 0 0 34px rgba(226, 205, 151, 0.025), 0 0 0 70px rgba(226, 205, 151, 0.02);
+      content: "";
+      pointer-events: none;
+    }
+    .hero-copy { position: relative; z-index: 1; }
+    .eyebrow { display: flex; align-items: center; gap: 9px; color: #e2c987; font-size: 11px; font-weight: 750; letter-spacing: 0.15em; text-transform: uppercase; }
+    .eyebrow-mark { display: grid; width: 23px; height: 23px; place-items: center; border: 1px solid rgba(226, 201, 135, 0.48); border-radius: 7px; color: #f0daa0; font-size: 10px; letter-spacing: 0; }
+    h1 { margin: 13px 0 10px; color: #fff; font-size: clamp(34px, 6vw, 52px); letter-spacing: -0.055em; line-height: 1.08; }
+    .hero-copy > p { max-width: 590px; margin: 0; color: #b7c0d5; font-size: 15px; }
+
+    .hero-brief {
+      position: relative;
+      z-index: 1;
+      padding: 17px 18px 14px;
+      border: 1px solid rgba(232, 221, 255, 0.2);
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.055);
+      box-shadow: inset 0 1px rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(8px);
+    }
+    .brief-meta, .brief-bottom { display: flex; align-items: center; justify-content: space-between; color: #aab4ca; font-size: 9px; font-weight: 750; letter-spacing: 0.12em; }
+    .brief-meta span:last-child { color: #e2c987; }
+    .brief-orb { display: grid; width: 58px; height: 58px; place-items: center; margin: 19px auto 13px; border: 1px solid rgba(226, 201, 135, 0.54); border-radius: 50%; background: radial-gradient(circle, rgba(150, 124, 223, 0.32), rgba(38, 35, 68, 0.2) 68%); box-shadow: 0 0 28px rgba(147, 119, 223, 0.2), inset 0 0 13px rgba(255, 255, 255, 0.08); color: #f1d991; font-size: 23px; }
+    .brief-overline { margin: 0; color: #9c8bd5; font-size: 9px; font-weight: 750; letter-spacing: 0.17em; text-align: center; }
+    .brief-title { margin: 4px 0 16px; color: #fff; font-size: 19px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.25; text-align: center; }
+    .brief-title em { color: #e5cf93; font-style: normal; }
+    .brief-bottom { padding-top: 11px; border-top: 1px solid rgba(255, 255, 255, 0.12); font-size: 8px; }
+    .channel-status { display: flex; align-items: center; gap: 8px; color: #64708a; font-size: 10px; font-weight: 750; letter-spacing: 0.12em; }
+    .channel-status::before { width: 6px; height: 6px; border-radius: 50%; background: var(--purple); box-shadow: 0 0 0 3px rgba(121, 80, 216, 0.12); content: ""; }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      margin-top: 20px;
+      padding: clamp(20px, 4vw, 30px);
+      border: 1px solid #282e40;
+      border-radius: 20px;
+      background: linear-gradient(145deg, #151a27, #111621);
+      box-shadow: var(--shadow);
+    }
+    .card::before { position: absolute; top: 0; left: 30px; width: 78px; height: 2px; background: linear-gradient(90deg, var(--blue), var(--purple), var(--gold)); content: ""; }
+
+    .section-heading { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 21px; }
+    .section-number {
+      display: grid;
+      flex: 0 0 34px;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border: 1px solid #38324e;
+      border-radius: 11px;
+      background: linear-gradient(145deg, #27233c, #1d2031);
+      color: #c0a3ff;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    h2 { margin: 0; font-size: 20px; letter-spacing: -0.025em; line-height: 1.35; }
+    .section-heading p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+
+    .sentence-label, .field-label { display: block; margin-bottom: 7px; color: #c1c8d9; font-size: 12px; font-weight: 700; }
+    textarea, .token-name, .token-probability {
+      width: 100%;
+      border: 1px solid #343b50;
+      border-radius: 12px;
+      outline: none;
+      background: #0d111b;
+      color: var(--ink);
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+    textarea { min-height: 104px; padding: 13px 15px; resize: vertical; }
+    textarea:focus, .token-name:focus, .token-probability:focus { border-color: #8774db; box-shadow: 0 0 0 3px rgba(121, 93, 210, 0.2); }
+
+    .samples, .manual-presets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .button {
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 16px;
+      border: 0;
+      border-radius: 11px;
+      color: white;
+      font-weight: 700;
+      transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+    }
+    .button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 7px 20px rgba(80, 68, 160, 0.28); }
+    .button:disabled { cursor: wait; opacity: 0.65; }
+    .button-primary { background: linear-gradient(110deg, var(--blue), var(--purple)); }
+    .button-small { min-height: 34px; padding: 6px 11px; border: 1px solid #393f54; background: #1b2030; color: #c8cfe0; font-size: 12px; font-weight: 650; }
+    .button-small:hover:not(:disabled) { border-color: #7262b2; background: #24233a; }
+    .button-quiet { min-height: 34px; padding: 5px 9px; border: 0; background: transparent; color: #ff899d; font-size: 12px; }
+    .button-row { display: flex; flex-wrap: wrap; align-items: center; gap: 13px; margin-top: 18px; }
+
+    .status { min-height: 24px; color: var(--muted); font-size: 13px; }
+    .status[data-state="ready"] { color: var(--green); }
+    .status[data-state="error"] { color: var(--red); }
+    .status[data-state="loading"] { color: #b6a0f4; }
+
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 13px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    thead { background: #1b2030; }
+    th, td { padding: 11px 14px; border-bottom: 1px solid var(--line); }
+    th { color: #aab3c9; font-size: 11px; font-weight: 750; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+    td { color: #c8cede; font-size: 13px; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .numeric { font-variant-numeric: tabular-nums; }
+    .token-cell { color: #e1e5f1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+    .empty-row { padding: 18px; color: #8d97ad; text-align: center; }
+
+    .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+    .step {
+      min-width: 0;
+      padding: 15px;
+      border: 1px solid #2b3245;
+      border-radius: 13px;
+      background: #191e2c;
+    }
+    .step-label { display: block; margin-bottom: 5px; color: #a2abc0; font-size: 11px; font-weight: 750; letter-spacing: 0.08em; text-transform: uppercase; }
+    .step-value { color: #d1d6e5; font-size: 13px; overflow-wrap: anywhere; }
+    .perplexity-step { border-color: #51416f; background: linear-gradient(135deg, #242039, #1b2032); }
+    .perplexity-step .step-value { color: #c2a3ff; font-size: clamp(24px, 4vw, 34px); font-weight: 800; letter-spacing: -0.04em; line-height: 1.2; }
+
+    .prediction-list { display: grid; gap: 13px; }
+    .prediction-row { display: grid; grid-template-columns: minmax(100px, 160px) 1fr 62px; align-items: center; gap: 12px; }
+    .prediction-token { overflow: hidden; color: #c9cfe0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-overflow: ellipsis; white-space: nowrap; }
+    .bar-track { height: 10px; overflow: hidden; border-radius: 99px; background: #292f41; }
+    .bar-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #6a75e9, #9b70df); }
+    .prediction-row:first-child .bar-fill { background: linear-gradient(90deg, #3f65e5, #7351d6); }
+    .prediction-row:first-child .prediction-token { color: #d6bdff; font-weight: 750; }
+    .prediction-percent { color: #a6afc3; font-size: 12px; font-variant-numeric: tabular-nums; text-align: right; }
+    .prediction-empty { padding: 18px; border: 1px dashed #3a4155; border-radius: 12px; color: #929cb2; text-align: center; }
+
+    .simulated-label { display: inline-flex; margin-left: 7px; padding: 3px 8px; border: 1px solid #695532; border-radius: 99px; background: #2c271b; color: #e2c87f; font-size: 10px; font-weight: 750; letter-spacing: 0.03em; text-transform: uppercase; vertical-align: 2px; }
+    .manual-row { display: grid; grid-template-columns: 48px minmax(120px, 1fr) minmax(100px, 180px) 70px; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #2b3245; }
+    .manual-row:last-child { border-bottom: 0; }
+    .manual-index { color: #a0a9bf; font-size: 12px; font-weight: 700; }
+    .token-name, .token-probability { min-height: 38px; padding: 8px 10px; font-size: 13px; }
+    .validation { min-height: 22px; margin-top: 8px; color: var(--red); font-size: 12px; }
+    .manual-results { margin-top: 20px; }
+    .manual-results h3 { margin: 0 0 11px; font-size: 15px; }
+    .footer-note { margin: 21px 0 0; color: #8c96ad; font-size: 12px; text-align: center; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="masthead">
+      <div class="masthead-brand"><span class="sigil" aria-hidden="true">✦</span> The scenario archive</div>
+      <div class="archive-state">Probability record active</div>
+    </div>
+    <header class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="eyebrow-mark">01</span> Scenario briefing · Read the odds</div>
+        <h1>Perplexity Explorer</h1>
+        <p>Every sentence follows a path through probabilities. Trace the tokens, compare predictions, and see how surprising a line can be.</p>
+      </div>
+      <aside class="hero-brief" aria-label="Scenario record">
+        <div class="brief-meta"><span>RECORD 001</span><span>LANGUAGE</span></div>
+        <div class="brief-orb" aria-hidden="true">✦</div>
+        <p class="brief-overline">SCENARIO ARCHIVE</p>
+        <p class="brief-title">Words follow<br><em>probability.</em></p>
+        <div class="brief-bottom"><span>MODEL OBSERVATION</span><span>01 / 04</span></div>
+      </aside>
+    </header>
+
+    <section class="card" aria-labelledby="input-title">
+      <div class="section-heading">
+        <span class="section-number" aria-hidden="true">01</span>
+        <div>
+          <h2 id="input-title">Type a sentence</h2>
+          <p>Let a language model score each token in context.</p>
+        </div>
+      </div>
+      <label class="sentence-label" for="sentence-input">Your sentence</label>
+      <textarea id="sentence-input" spellcheck="false">I love Python</textarea>
+      <div class="samples" aria-label="Sample sentences">
+        <button class="button button-small sample-button" type="button" data-sentence="I love Python">I love Python</button>
+        <button class="button button-small sample-button" type="button" data-sentence="Python love I">Python love I</button>
+        <button class="button button-small sample-button" type="button" data-sentence="The capital of France is Paris">The capital of France is Paris</button>
+      </div>
+      <div class="button-row">
+        <button class="button button-primary" id="calculate-button" type="button">Calculate perplexity <span aria-hidden="true">↗</span></button>
+        <div class="status" id="model-status" role="status" aria-live="polite" data-state="idle">The model will download when you calculate for the first time.</div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="probability-title">
+      <div class="section-heading">
+        <span class="section-number" aria-hidden="true">02</span>
+        <div>
+          <h2 id="probability-title">Probability of each token → perplexity</h2>
+          <p>Each token is scored from the model's next-token distribution.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Token</th><th>Probability P</th><th>1/P</th></tr></thead>
+          <tbody id="model-token-rows"><tr><td class="empty-row" colspan="4">Calculate a sentence to see its token probabilities.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="steps" aria-live="polite">
+        <div class="step"><span class="step-label">Step 1 · Multiply 1/P</span><div class="step-value numeric" id="model-product">—</div></div>
+        <div class="step"><span class="step-label">Step 2 · N = number of tokens</span><div class="step-value numeric" id="model-count">—</div></div>
+        <div class="step perplexity-step"><span class="step-label">Step 3 · Perplexity = product^(1/N)</span><div class="step-value numeric" id="model-perplexity">—</div></div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="prediction-title">
+      <div class="section-heading">
+        <span class="section-number" aria-hidden="true">03</span>
+        <div>
+          <h2 id="prediction-title">What does the model predict next?</h2>
+          <p>The eight most likely next tokens from the final position.</p>
+        </div>
+      </div>
+      <div class="prediction-list" id="prediction-list">
+        <div class="prediction-empty">Run a sentence to reveal the model's next-token predictions.</div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="manual-title">
+      <div class="section-heading">
+        <span class="section-number" aria-hidden="true">04</span>
+        <div>
+          <h2 id="manual-title">Try it by hand <span class="simulated-label">Simulated, not from the model</span></h2>
+          <p>Enter your own token names and probabilities. Results update as you type.</p>
+        </div>
+      </div>
+      <div class="manual-presets" aria-label="Simulated probability presets">
+        <button class="button button-small preset-button" type="button" data-preset="love">I love Python</button>
+        <button class="button button-small preset-button" type="button" data-preset="eighths">All 1/8</button>
+        <button class="button button-small preset-button" type="button" data-preset="surprise">One surprising word</button>
+      </div>
+      <div id="manual-rows" aria-label="Simulated token probabilities"></div>
+      <div class="button-row">
+        <button class="button button-small" id="add-token-button" type="button">＋ Add token</button>
+      </div>
+      <div class="validation" id="manual-validation" role="status" aria-live="polite"></div>
+      <div class="manual-results">
+        <h3>Simulated token probabilities</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Token</th><th>Probability P</th><th>1/P</th></tr></thead>
+            <tbody id="manual-token-results"></tbody>
+          </table>
+        </div>
+        <div class="steps" aria-live="polite">
+          <div class="step"><span class="step-label">Step 1 · Multiply 1/P</span><div class="step-value numeric" id="manual-product">—</div></div>
+          <div class="step"><span class="step-label">Step 2 · N = number of tokens</span><div class="step-value numeric" id="manual-count">—</div></div>
+          <div class="step perplexity-step"><span class="step-label">Step 3 · Perplexity = product^(1/N)</span><div class="step-value numeric" id="manual-perplexity">—</div></div>
+        </div>
+      </div>
+    </section>
+    <p class="footer-note">Model probabilities come from DistilGPT-2 running in your browser. The hand-built examples are simulated.</p>
+  </main>
+
+  <script type="module">
+    // Load the browser model only when the user asks for a calculation.
+    import { AutoTokenizer, AutoModelForCausalLM, Tensor } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3";
+
+    const MODEL_ID = "Xenova/distilgpt2";
+    const START_TOKEN_ID = 50256;
+    const sentenceInput = document.querySelector("#sentence-input");
+    const calculateButton = document.querySelector("#calculate-button");
+    const statusLine = document.querySelector("#model-status");
+    let tokenizer;
+    let model;
+    let modelLoadPromise;
+
+    function setStatus(message, state = "idle") {
+      statusLine.textContent = message;
+      statusLine.dataset.state = state;
+    }
+
+    function setBusy(busy) {
+      calculateButton.disabled = busy;
+      document.querySelectorAll(".sample-button").forEach((button) => { button.disabled = busy; });
+    }
+
+    function showToken(token) {
+      return token.replaceAll(" ", "␣").replaceAll("\n", "↵").replaceAll("\t", "⇥") || "∅";
+    }
+
+    function formatNumber(value) {
+      if (!Number.isFinite(value)) return "∞";
+      if (value !== 0 && Math.abs(value) < 0.0001) return value.toExponential(3);
+      return Number(value.toPrecision(4)).toString();
+    }
+
+    function formatFromLog(logValue) {
+      if (logValue > Math.log(Number.MAX_VALUE)) return `>${Number.MAX_VALUE.toExponential(1)}`;
+      if (logValue < Math.log(Number.MIN_VALUE)) return `<${Number.MIN_VALUE.toExponential(1)}`;
+      return formatNumber(Math.exp(logValue));
+    }
+
+    function formatPerplexity(value) {
+      return Number(value.toFixed(2)).toString();
+    }
+
+    function addCell(row, value, className = "") {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      if (className) cell.className = className;
+      row.append(cell);
+    }
+
+    function renderSummary(rows, prefix) {
+      const sumNegativeLogs = rows.reduce((sum, row) => sum - row.logProbability, 0);
+      const reciprocals = rows.map((row) => formatFromLog(-row.logProbability));
+      document.querySelector(`#${prefix}-product`).textContent =
+        `${reciprocals.join(" × ")} = ${formatFromLog(sumNegativeLogs)}`;
+      document.querySelector(`#${prefix}-count`).textContent = String(rows.length);
+      document.querySelector(`#${prefix}-perplexity`).textContent =
+        formatPerplexity(Math.exp(sumNegativeLogs / rows.length));
+    }
+
+    function logProbabilityAt(logits, offset, tokenId, vocabularySize) {
+      let maxLogit = -Infinity;
+      for (let index = 0; index < vocabularySize; index++) {
+        maxLogit = Math.max(maxLogit, logits[offset + index]);
+      }
+      let expSum = 0;
+      for (let index = 0; index < vocabularySize; index++) {
+        expSum += Math.exp(logits[offset + index] - maxLogit);
+      }
+      return logits[offset + tokenId] - maxLogit - Math.log(expSum);
+    }
+
+    function topPredictions(logits, offset, vocabularySize) {
+      let maxLogit = -Infinity;
+      for (let index = 0; index < vocabularySize; index++) {
+        maxLogit = Math.max(maxLogit, logits[offset + index]);
+      }
+      let expSum = 0;
+      const top = [];
+      for (let id = 0; id < vocabularySize; id++) {
+        const value = logits[offset + id];
+        expSum += Math.exp(value - maxLogit);
+        const item = { id, logit: value };
+        let place = top.findIndex((candidate) => value > candidate.logit);
+        if (place === -1) place = top.length;
+        if (place < 8) {
+          top.splice(place, 0, item);
+          if (top.length > 8) top.pop();
+        }
+      }
+      return top.map(({ id, logit }) => ({ id, probability: Math.exp(logit - maxLogit) / expSum }));
+    }
+
+    async function ensureModel() {
+      if (model && tokenizer) return;
+      if (!modelLoadPromise) {
+        modelLoadPromise = (async () => {
+          setStatus("Downloading the model…", "loading");
+          tokenizer = await AutoTokenizer.from_pretrained(MODEL_ID);
+          model = await AutoModelForCausalLM.from_pretrained(MODEL_ID, { dtype: "q8" });
+        })().catch((error) => {
+          tokenizer = undefined;
+          model = undefined;
+          modelLoadPromise = undefined;
+          throw error;
+        });
+      }
+      await modelLoadPromise;
+      setStatus("Model ready", "ready");
+    }
+
+    function renderModelResults(tokenIds, logits, sequenceLength, vocabularySize) {
+      const tokenRows = tokenIds.map((id, index) => {
+        const logProbability = logProbabilityAt(logits, index * vocabularySize, id, vocabularySize);
+        return { token: tokenizer.decode([id]), logProbability };
+      });
+      const tbody = document.querySelector("#model-token-rows");
+      tbody.replaceChildren();
+      tokenRows.forEach((item, index) => {
+        const row = document.createElement("tr");
+        addCell(row, String(index + 1), "numeric");
+        addCell(row, showToken(item.token), "token-cell");
+        addCell(row, formatFromLog(item.logProbability), "numeric");
+        addCell(row, formatFromLog(-item.logProbability), "numeric");
+        tbody.append(row);
+      });
+      renderSummary(tokenRows, "model");
+
+      const predictions = topPredictions(logits, (sequenceLength - 1) * vocabularySize, vocabularySize);
+      const list = document.querySelector("#prediction-list");
+      list.replaceChildren();
+      predictions.forEach(({ id, probability }, index) => {
+        const row = document.createElement("div");
+        row.className = "prediction-row";
+        const token = document.createElement("div");
+        token.className = "prediction-token";
+        token.textContent = showToken(tokenizer.decode([id]));
+        token.title = tokenizer.decode([id]) || "Special token";
+        const track = document.createElement("div");
+        track.className = "bar-track";
+        const fill = document.createElement("div");
+        fill.className = "bar-fill";
+        fill.style.width = `${Math.max(probability * 100, 0.15)}%`;
+        track.append(fill);
+        const percent = document.createElement("div");
+        percent.className = "prediction-percent";
+        percent.textContent = `${(probability * 100).toPrecision(3)}%`;
+        row.append(token, track, percent);
+        list.append(row);
+      });
+    }
+
+    async function calculate(sentence = sentenceInput.value) {
+      const cleanSentence = sentence.trim();
+      if (!cleanSentence) {
+        setStatus("Enter a sentence before calculating.", "error");
+        return;
+      }
+      setBusy(true);
+      try {
+        await ensureModel();
+        const tokenIds = Array.from(tokenizer.encode(cleanSentence));
+        if (tokenIds.length === 0) {
+          setStatus("This sentence did not produce any tokens.", "error");
+          return;
+        }
+        if (tokenIds.length + 1 > 1024) {
+          setStatus("This sentence is too long for the model. Please use 1,023 tokens or fewer.", "error");
+          return;
+        }
+        setStatus("Calculating perplexity…", "loading");
+        const inputIds = [START_TOKEN_ID, ...tokenIds];
+        const shape = [1, inputIds.length];
+        const tensor = new Tensor("int64", BigInt64Array.from(inputIds, BigInt), shape);
+        const attentionMask = new Tensor("int64", BigInt64Array.from(inputIds, () => 1n), shape);
+        const positionIds = new Tensor("int64", BigInt64Array.from(
+          { length: inputIds.length },
+          (_, index) => BigInt(index)
+        ), shape);
+        const output = await model({ input_ids: tensor, attention_mask: attentionMask, position_ids: positionIds });
+        const logits = output.logits.data;
+        const [, sequenceLength, vocabularySize] = output.logits.dims;
+        renderModelResults(tokenIds, logits, sequenceLength, vocabularySize);
+        setStatus("Model ready", "ready");
+      } catch (error) {
+        const details = error instanceof Error ? error.message : String(error);
+        setStatus(`Model error: ${details}`, "error");
+      } finally {
+        setBusy(false);
+      }
+    }
+
+    calculateButton.addEventListener("click", () => { calculate(); });
+    document.querySelectorAll(".sample-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        sentenceInput.value = button.dataset.sentence;
+        calculate();
+      });
+    });
+
+    // Keep the hand-entered examples separate from real model output.
+    let manualTokens = [
+      { name: "I", probability: "0.5" },
+      { name: "love", probability: "0.8" },
+      { name: "Python", probability: "0.2" }
+    ];
+
+    function updateManualResults() {
+      const tbody = document.querySelector("#manual-token-results");
+      const validation = document.querySelector("#manual-validation");
+      tbody.replaceChildren();
+      const rows = manualTokens.map((item) => {
+        const probability = Number(item.probability);
+        return { token: item.name.trim(), probability, valid: item.name.trim() !== "" && Number.isFinite(probability) && probability > 0 && probability <= 1 };
+      });
+      rows.forEach((item, index) => {
+        const row = document.createElement("tr");
+        addCell(row, String(index + 1), "numeric");
+        addCell(row, showToken(item.token), "token-cell");
+        addCell(row, item.valid ? formatNumber(item.probability) : "—", "numeric");
+        addCell(row, item.valid ? formatNumber(1 / item.probability) : "—", "numeric");
+        tbody.append(row);
+      });
+      if (rows.length === 0) {
+        const row = document.createElement("tr");
+        addCell(row, "Add a token to calculate simulated perplexity.", "empty-row");
+        row.firstElementChild.colSpan = 4;
+        tbody.append(row);
+        validation.textContent = "Add at least one token to calculate.";
+        document.querySelector("#manual-product").textContent = "—";
+        document.querySelector("#manual-count").textContent = "—";
+        document.querySelector("#manual-perplexity").textContent = "—";
+        return;
+      }
+      if (rows.some((item) => !item.valid)) {
+        validation.textContent = "Enter a token name and a probability greater than 0 and at most 1 for every row.";
+        document.querySelector("#manual-product").textContent = "—";
+        document.querySelector("#manual-count").textContent = "—";
+        document.querySelector("#manual-perplexity").textContent = "—";
+        return;
+      }
+      validation.textContent = "";
+      renderSummary(rows.map((item) => ({ logProbability: Math.log(item.probability) })), "manual");
+    }
+
+    function renderManualInputs() {
+      const container = document.querySelector("#manual-rows");
+      container.replaceChildren();
+      manualTokens.forEach((item, index) => {
+        const row = document.createElement("div");
+        row.className = "manual-row";
+        const label = document.createElement("span");
+        label.className = "manual-index";
+        label.textContent = `Token ${index + 1}`;
+        const name = document.createElement("input");
+        name.className = "token-name";
+        name.type = "text";
+        name.setAttribute("aria-label", `Token ${index + 1} name`);
+        name.placeholder = "Token name";
+        name.value = item.name;
+        name.addEventListener("input", () => {
+          item.name = name.value;
+          updateManualResults();
+        });
+        const probability = document.createElement("input");
+        probability.className = "token-probability";
+        probability.type = "number";
+        probability.min = "0";
+        probability.max = "1";
+        probability.step = "any";
+        probability.inputMode = "decimal";
+        probability.setAttribute("aria-label", `Token ${index + 1} probability`);
+        probability.placeholder = "0 to 1";
+        probability.value = item.probability;
+        probability.addEventListener("input", () => {
+          item.probability = probability.value;
+          updateManualResults();
+        });
+        const remove = document.createElement("button");
+        remove.className = "button button-quiet";
+        remove.type = "button";
+        remove.textContent = "Remove";
+        remove.setAttribute("aria-label", `Remove token ${index + 1}`);
+        remove.addEventListener("click", () => {
+          manualTokens.splice(index, 1);
+          renderManualInputs();
+          updateManualResults();
+        });
+        row.append(label, name, probability, remove);
+        container.append(row);
+      });
+    }
+
+    const presets = {
+      love: [["I", "0.5"], ["love", "0.8"], ["Python", "0.2"]],
+      eighths: Array.from({ length: 8 }, (_, index) => [`Token ${index + 1}`, "0.125"]),
+      surprise: [["A", "0.9"], ["very", "0.9"], ["likely", "0.9"], ["word", "0.01"]]
+    };
+
+    document.querySelector("#add-token-button").addEventListener("click", () => {
+      manualTokens.push({ name: "", probability: "" });
+      renderManualInputs();
+      updateManualResults();
+      document.querySelector("#manual-rows .manual-row:last-child .token-name").focus();
+    });
+    document.querySelectorAll(".preset-button").forEach((button) => {
+      button.addEventListener("click", () => {
+        manualTokens = presets[button.dataset.preset].map(([name, probability]) => ({ name, probability }));
+        renderManualInputs();
+        updateManualResults();
+      });
+    });
+
+    renderManualInputs();
+    updateManualResults();
+  </script>
+</body>
+</html>
